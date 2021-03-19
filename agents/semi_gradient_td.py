@@ -1,21 +1,23 @@
 import torch
-import wandb
 import numpy as np
 from tqdm import tqdm
 
 def train_td(env, model, loss, optimizer, device, cfg):
-    wandb.watch(model, log='all')#, log_freq=1)
     state = env.reset()
     obsall = np.zeros((cfg['N_TRAIN_STEPS'], state.observation.shape[0],))
     predall = np.zeros((cfg['N_TRAIN_STEPS']))
     t = -1
     # take 100 steps at start
+    results_list = []
+    global_step = 0;
     for i in range(cfg['INITIAL_STEPS']):
         t += 1
         step = env.step(None)
         obsall[t] = step.observation
         predall[t] = 0
-        wandb.log({'TD Error': 0, 'V(t)': 0, 'MSRE': 1})
+        results_list.append([0, 0, global_step, cfg["rank"]])
+        global_step+=1
+
 
     for i in tqdm(range(cfg['N_TRAIN_STEPS'] - cfg['INITIAL_STEPS'])):
         t += 1
@@ -47,7 +49,7 @@ def train_td(env, model, loss, optimizer, device, cfg):
             print(f'TD Error at t:{i} = {td_error}')
         # Store the value prediction belonging to o_t
         predall[t] = V_tp1[-1].detach().item()
+        global_step += 1
+        results_list.append([td_error, predall[t], global_step  ,cfg["rank"]])
 
-        wandb.log({'TD Error': td_error, 'V(t)': predall[t]})
-    #wandb.log({'observations': wandb.Table(data=obsall, columns=list(range(obsall.shape[1])))})
-    return obsall, predall
+    return obsall, predall, results_list

@@ -15,7 +15,7 @@ def train_td(env, model, loss, optimizer, device, cfg):
         step = env.step(None)
         obsall[t] = step.observation
         predall[t] = 0
-        wandb.log({'TD Error': 0, 'V(t)': 0})
+        wandb.log({'TD Error': 0, 'V(t)': 0, 'MSRE': 1})
 
     for i in tqdm(range(cfg['N_TRAIN_STEPS'] - cfg['INITIAL_STEPS'])):
         t += 1

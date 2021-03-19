@@ -15,7 +15,7 @@
   value: 10
 'ISI_interval':
   desc:
-  value: [3,7]
+  value: [7,13]
 'ITI_interval':
   desc:
   value: [80,120]
@@ -42,7 +42,7 @@
   value: 0
 'N_TRAIN_STEPS':
   desc:
-  value: 1000
+  value: 2000000
 'TBPTT_T':
   desc:
   value: 10
@@ -53,8 +53,8 @@
   desc:
   value: 1e-4
 'INITIAL_STEPS':
-  desc:
+  desc: Number of env steps to take and store before starting training
   value: 100
 'GAMMA':
-  desc:
+  desc: This is set in train.py
   value: 0

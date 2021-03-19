@@ -1,0 +1,39 @@
+method: grid
+metric:
+  goal: minimize
+  name: MSRE
+parameters:
+  HIDDEN_L_SIZE:
+    distribution: categorical
+    values:
+    - 10
+    - 20
+    - 40
+  ISI_interval:
+    distribution: categorical
+    values:
+    - - 3
+      - 7
+    - - 7
+      - 13
+    - - 14
+      - 26
+    - - 20
+      - 40
+  STEP_SIZE:
+    distribution: categorical
+    values:
+    - 3e-06
+    - 1e-05
+    - 3e-05
+    - 0.0001
+    - 0.0003
+    - 0.001
+  TBPTT_T:
+    distribution: categorical
+    values:
+    - 5
+    - 10
+    - 20
+    - 40
+program: train.py

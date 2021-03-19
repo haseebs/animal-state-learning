@@ -1,0 +1,60 @@
+'SEED':
+  desc:
+  value: 0
+'USE_GPU':
+  desc:
+  value: True
+'NUM_CS':
+  desc:
+  value: 1
+'NUM_US':
+  desc:
+  value: 1
+'NUM_DIST':
+  desc:
+  value: 10
+'ISI_interval':
+  desc:
+  value: [3,7]
+'ITI_interval':
+  desc:
+  value: [80,120]
+'LEN_CS':
+  desc:
+  value: 4
+'LEN_US':
+  desc:
+  value: 2
+'LEN_DIST':
+  desc:
+  value: 4
+'ADAMB1':
+  desc:
+  value: 0.9
+'ADAMB2':
+  desc:
+  value: 0.999
+'ADAME':
+  desc:
+  value: 10e-8
+'LAMBDA':
+  desc:
+  value: 0
+'N_TRAIN_STEPS':
+  desc:
+  value: 1000
+'TBPTT_T':
+  desc:
+  value: 10
+'HIDDEN_L_SIZE':
+  desc:
+  value: 10
+'STEP_SIZE':
+  desc:
+  value: 1e-4
+'INITIAL_STEPS':
+  desc:
+  value: 100
+'GAMMA':
+  desc:
+  value: 0

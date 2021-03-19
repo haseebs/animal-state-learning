@@ -1,4 +1,13 @@
+import wandb
 import matplotlib.pyplot as plt
+
+def upload_to_wandb(obsall, predall, errors, n=10000, nobs=12):
+    wandb.log({'final_predictions': wandb.plot.line_series(
+        xs=list(range(n)),
+        ys=[obsall[:,0][-n:].tolist(), predall[-n:].tolist(), obsall[:,1][-n:].tolist(), errors[2][-n:].tolist() ],
+        keys=['US', 'Predicted Value', 'CS', 'Ideal Target'],
+        title=f'Last {n} obs & preds',
+        xname='t')})
 
 def plot_last_n(obsall, predall, errors=None, n=1000, nobs=12):
     fig, axs = plt.subplots(nobs+3,figsize=(30, 35))

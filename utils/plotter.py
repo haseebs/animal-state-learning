@@ -5,12 +5,12 @@ def plot_last_n(obsall, predall, errors=None, n=1000, nobs=12):
     fig, axs = plt.subplots(nobs+3,figsize=(30, 35))
     fig.tight_layout()
     for i in range(nobs):
-        axs[i].plot(list(range(n)), obsall[:, i][-n:])
+        axs[i].step(list(range(n)), obsall[:, i][-n:])
 
     if errors is not None:
-        axs[-3].plot(list(range(n)), errors[2][-n:] )
-        axs[-2].plot(list(range(n)), predall[-n:] )
-        axs[-1].plot(list(range(n)), errors[1][-n:])
+        axs[-3].step(list(range(n)), errors[2][-n:] )
+        axs[-2].step(list(range(n)), predall[-n:] )
+        axs[-1].step(list(range(n)), errors[1][-n:])
         print(f'MSE: {errors[0]}')
 
     axs[0].title.set_text('US')

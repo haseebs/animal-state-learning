@@ -62,9 +62,9 @@ optimizer = torch.optim.Adam(model.parameters(),
                              eps=float(args['ADAME']))
 
 obsall, predall, list_of_results = train_td(tc, model, loss, optimizer, device, args)
-errors = compute_return_error(obsall[:,0], predall, args['GAMMA'])
+errors = compute_return_error(obsall[:,0], np.append(predall, 0)[1:], args['GAMMA'])
 keys = ["TD_error", "V(t)", "step", "rank"]
 my_experiment.insert_values("metrics", keys, list_of_results)
 
-fig = plot_last_n(obsall, predall, errors, n=500, nobs=args['NUM_CS'] + args['NUM_US'] + args['NUM_DIST'])
+fig = plot_last_n(obsall, np.append(predall, 0)[1:], errors, n=500, nobs=args['NUM_CS'] + args['NUM_US'] + args['NUM_DIST'])
 plt.savefig(my_experiment.path + "result.pdf", format="pdf")

@@ -5,9 +5,17 @@ import logging
 import os
 import subprocess
 from logging import handlers
-import sqlite3
+import mysql.connector
+import sys
+import time
+import random
+import json
+
+
+
 
 logger = logging.getLogger('experiment')
+
 
 
 # How to use this class (See the main function at the end of this file for an actual example)
@@ -27,18 +35,45 @@ class experiment:
     Race condition:
     '''
 
-    def __init__(self, name, args, output_dir="../", sql=True, rank=None, seed=None):
+    def __init__(self, name, args, output_dir="../", sql=True, run=None, seed=None):
         import sys
+
+        with open("credentials.json") as f:
+            self.db_data = json.load(f)
+
+        self.db_name = name
+        while(True):
+            try:
+                conn = mysql.connector.connect(
+                    host=self.db_data['database'][0]["ip"],
+                    user=self.db_data['database'][0]["username"],
+                    password=self.db_data['database'][0]["password"]
+                )
+                break
+            except:
+                print("Waiting")
+                time.sleep((random.random() + 0.2) * 5)
+
+        sql_run = conn.cursor()
+        try:
+            sql_run.execute("CREATE DATABASE "+name +";")
+        except:
+            logger.info("DB already exists")
+        sql_run.execute("USE "+ name + ";")
+
+        conn.close()
+
+
         if name[-1] != "/":
             name += "/"
 
         self.command_args = "python " + " ".join(sys.argv)
-        self.rank = rank
+        self.run = run
         self.name_initial = name
 
         if not args is None:
-            if rank is not None:
-                self.name = name + str(rank) + "/" + str(seed)
+            if run is not None:
+                self.name = name + str(run) + "/" + str(seed)
             else:
                 self.name = name
             self.params = args
@@ -68,16 +103,15 @@ class experiment:
                     except:
                         pass
             self.path = full_path + "_" + str(ver) + "/"
-
+            args["output_dir"] = self.path
             if sql:
                 self.database_path =  os.path.join(self.root_folder, self.name_initial, "results.db")
 
-                self.conn = sqlite3.connect(self.database_path, timeout=300)
-                self.sql_run = self.conn.cursor()
 
-                ret = self.make_table("runs", args, ["rank"])
+
+
+                ret = self.make_table("runs", args, ["run"])
                 self.insert_value("runs", args)
-                self.conn.close()
                 if ret:
                     print("Table created")
                 else:
@@ -86,13 +120,13 @@ class experiment:
             fh = logging.FileHandler(self.path + "log.txt")
             fh.setLevel(logging.DEBUG)
             fh.setFormatter(
-                logging.Formatter('rank:' + str(args['rank']) + ' ' + name + ' %(levelname)-8s %(message)s'))
+                logging.Formatter('run:' + str(args['run']) + ' ' + name + ' %(levelname)-8s %(message)s'))
             logger.addHandler(fh)
 
             ch = logging.handlers.logging.StreamHandler()
             ch.setLevel(logging.DEBUG)
             ch.setFormatter(
-                logging.Formatter('rank:' + str(args['rank']) + ' ' + name + ' %(levelname)-8s %(message)s'))
+                logging.Formatter('run:' + str(args['run']) + ' ' + name + ' %(levelname)-8s %(message)s'))
             logger.addHandler(ch)
             logger.setLevel(logging.DEBUG)
             logger.propagate = False
@@ -102,7 +136,20 @@ class experiment:
             self.store_json()
 
     def get_connection(self):
-        return
+        while (True):
+            try:
+                conn = mysql.connector.connect(
+                    host=self.db_data['database'][0]["ip"],
+                    user=self.db_data['database'][0]["username"],
+                    password=self.db_data['database'][0]["password"]
+                )
+                break
+            except:
+                time.sleep((random.random() + 0.2) * 5)
+
+        sql_run  = conn.cursor()
+        sql_run.execute("USE " + self.db_name + ";")
+        return conn, sql_run
 
     def is_jsonable(self, x):
         try:
@@ -114,8 +161,7 @@ class experiment:
 
     def make_table(self, table_name, data_dict, primary_key):
 
-        self.conn = sqlite3.connect(self.database_path, timeout=300)
-        self.sql_run = self.conn.cursor()
+        conn, sql_run = self.get_connection()
 
         table = "CREATE TABLE " + table_name + " ("
         counter = 0
@@ -130,47 +176,49 @@ class experiment:
                 table += ", "
         if primary_key is not None:
             table += " ".join([",", "PRIMARY KEY(", ",".join(primary_key)]) + ")"
-        table = table + ")"
+        table = table + ");"
         print(table)
         try:
-            self.sql_run.execute(table)
-            self.conn.close()
+            sql_run.execute(table)
+            conn.commit()
+            conn.close()
             return True
         except:
-            self.conn.close()
+            conn.close()
+            logger.error("Not making table");
             return False
 
+
+
     def insert_value(self, table_name, data_dict):
-        self.conn = sqlite3.connect(self.database_path, timeout=300)
-        self.sql_run = self.conn.cursor()
-        query = " ".join(["INSERT INTO", table_name,   str(tuple(data_dict.keys())),   "VALUES", str(tuple(data_dict.values()))])
-        self.sql_run.execute(query)
-        self.conn.commit()
-        self.conn.close()
+        conn, sql_run = self.get_connection()
+        query = " ".join(["INSERT INTO", table_name,   str(tuple(data_dict.keys())).replace("'", ""),   "VALUES", str(tuple(data_dict.values()))]) + ";"
+        # print(query)
+        sql_run.execute(query)
+        conn.commit()
+        conn.close()
+
 
     def insert_values(self, table_name, keys, value_list):
-        self.conn = sqlite3.connect(self.database_path, timeout=300)
-        self.sql_run = self.conn.cursor()
+        conn, sql_run = self.get_connection()
         strin = "("
         counter = 0
         for a in value_list[0]:
             counter+=1
-            strin += "?"
+            strin += "%s"
             if counter != len(value_list[0]):
                 strin +=","
-        strin += ")"
+        strin += ");"
 
         query = " ".join(
-            ["INSERT INTO", table_name, str(tuple(keys)), "VALUES", strin])
-        # print(query)
+            ["INSERT INTO", table_name, str(tuple(keys)).replace("'", ""), "VALUES", strin])
+
         # print(value_list)
-        self.sql_run.executemany(query, value_list)
-        self.conn.commit()
-        self.conn.close()
-
-    def commit_changes(self):
-        self.conn.commit()
-
+        print(query, value_list)
+        # quit()
+        sql_run.executemany(query, value_list)
+        conn.commit()
+        conn.close()
 
 
     def add_result(self, key, value):

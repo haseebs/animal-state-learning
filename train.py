@@ -1,7 +1,7 @@
 import random
 
 import torch
-import configs.animal_learning as reg_parser
+import configs.parameter_config as reg_parser
 from experiment.experiment import experiment
 import numpy as np
 
@@ -20,31 +20,34 @@ logger = logging.getLogger('experiment')
 
 p = reg_parser.Parser()
 total_seeds = len(p.parse_known_args()[0].seed)
-rank = p.parse_known_args()[0].rank
+run = p.parse_known_args()[0].run
 all_args = vars(p.parse_known_args()[0])
 
-args = utils.get_run(all_args, rank)
-args["ISI_interval"] = [int(x) for x in args["ISI_interval"].split(",")]
-args["ITI_interval"] = [int(x) for x in args["ITI_interval"].split(",")]
-args["GAMMA"] =  1-1/np.mean(args['ISI_interval'])
+args = utils.get_run(all_args, run)
+
 
 my_experiment = experiment(args["name"], args, args["output_dir"], sql=True,
-                           rank=int(rank / total_seeds),
+                           run=int(run / total_seeds),
                            seed=total_seeds)
 
 
-my_experiment.make_table("metrics", {"rank": 0, "TD_error": 0.0, "step": 0, "V(t)":0.0}, ("rank", "step"))
-my_experiment.make_table("msre", {"rank": 0, "msre": 0.0}, ("rank"))
+my_experiment.make_table("metrics", {"run": 0, "TD_error": 0.0, "step": 0, "V":0.0}, ("run", "step"))
+my_experiment.make_table("msre", {"run": 0, "msre": 0.0}, ["run"])
+my_experiment.make_table("last_N_points", {"run":0, "graph":"graph_data"}, ["run"])
 
 my_experiment.results["all_args"] = all_args
 utils.set_seed(args["seed"])
 
-gpu_to_use = rank % args["gpus"]
+gpu_to_use = run % args["gpus"]
 if torch.cuda.is_available():
     device = torch.device('cuda:' + str(gpu_to_use))
     logger.info("Using gpu : %s", 'cuda:' + str(gpu_to_use))
 else:
     device = torch.device('cpu')
+
+args["ISI_interval"] = [int(x) for x in args["ISI_interval"].split(",")]
+args["ITI_interval"] = [int(x) for x in args["ITI_interval"].split(",")]
+args["GAMMA"] =  1-1/np.mean(args['ISI_interval'])
 
 tc = TraceConditioning(seed=args['seed'],
                        ISI_interval=args['ISI_interval'],
@@ -61,10 +64,18 @@ optimizer = torch.optim.Adam(model.parameters(),
                                     args['ADAMB2']),
                              eps=float(args['ADAME']))
 
-obsall, predall, list_of_results = train_td(tc, model, loss, optimizer, device, args)
+obsall, predall, list_of_results = train_td(tc, model, loss, optimizer, device, args, my_experiment)
 errors = compute_return_error(obsall[:,0], predall, args['GAMMA'])
-keys = ["TD_error", "V(t)", "step", "rank"]
-my_experiment.insert_values("metrics", keys, list_of_results)
+
+
+
+keys = ["run", "msre"]
+list_of_errors = []
+list_of_errors.append([my_experiment.run, errors[0]])
+my_experiment.insert_values("msre", keys, list_of_errors)
+
 
 fig = plot_last_n(obsall, predall, errors, n=500, nobs=args['NUM_CS'] + args['NUM_US'] + args['NUM_DIST'])
+
+
 plt.savefig(my_experiment.path + "result.pdf", format="pdf")

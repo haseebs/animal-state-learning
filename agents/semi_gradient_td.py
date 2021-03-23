@@ -1,8 +1,11 @@
 import torch
 import numpy as np
 from tqdm import tqdm
+import logging
 
-def train_td(env, model, loss, optimizer, device, cfg):
+logger = logging.getLogger('experiment')
+
+def train_td(env, model, loss, optimizer, device, cfg, my_experiment):
     state = env.reset()
     obsall = np.zeros((cfg['N_TRAIN_STEPS'], state.observation.shape[0],))
     predall = np.zeros((cfg['N_TRAIN_STEPS']))
@@ -15,11 +18,11 @@ def train_td(env, model, loss, optimizer, device, cfg):
         step = env.step(None)
         obsall[t] = step.observation
         predall[t] = 0
-        results_list.append([0, 0, global_step, cfg["rank"]])
+        # results_list.append([0, 0, global_step, cfg["rank"]])
         global_step+=1
 
-
-    for i in tqdm(range(cfg['N_TRAIN_STEPS'] - cfg['INITIAL_STEPS'])):
+    running_error = 0
+    for i in range(cfg['N_TRAIN_STEPS'] - cfg['INITIAL_STEPS']):
         t += 1
         step_new = env.step(None)
         obsall[t] = step_new.observation
@@ -42,14 +45,26 @@ def train_td(env, model, loss, optimizer, device, cfg):
         # V_t also includes the prediction for o_t, so we remove it from here.
         # It is only used to calculate the TD target for o_t-1 previously
         td_error = loss(V_t[:-1], td_target.float())
+        optimizer.zero_grad()
         td_error.backward()
         optimizer.step()
-
+        #
         if i % 5000 == 0:
-            print(f'TD Error at t:{i} = {td_error}')
+            logger.info("TD Error at t:%d = %f", i, running_error)
+            keys = ["TD_error", "V", "step", "run"]
+            if len(results_list) > 0:
+                my_experiment.insert_values("metrics", keys, results_list)
+                results_list = []
+            # print(f'TD Error at t:{i} = {running_error}')
+        running_error = running_error*0.99 + td_error.item()*0.01
+        if i % 100 == 0:
+            results_list.append([running_error, predall[t], global_step, cfg["run"]])
         # Store the value prediction belonging to o_t
         predall[t] = V_tp1[-1].detach().item()
         global_step += 1
-        results_list.append([td_error, predall[t], global_step  ,cfg["rank"]])
+        # results_list.append([td_error.item(), predall[t], global_step  ,cfg["rank"]])
 
+    if len(results_list) > 0:
+        my_experiment.insert_values("metrics", keys, results_list)
+        results_list = []
     return obsall, predall, results_list

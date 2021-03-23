@@ -65,7 +65,7 @@ optimizer = torch.optim.Adam(model.parameters(),
                              eps=float(args['ADAME']))
 
 obsall, predall, list_of_results = train_td(tc, model, loss, optimizer, device, args, my_experiment)
-errors = compute_return_error(obsall[:,0], predall, args['GAMMA'])
+errors = compute_return_error(obsall[:,0], np.insert(predall, 0, 0)[:-1], args['GAMMA'])
 
 
 
@@ -75,7 +75,7 @@ list_of_errors.append([my_experiment.run, errors[0]])
 my_experiment.insert_values("msre", keys, list_of_errors)
 
 
-fig = plot_last_n(obsall, predall, errors, n=500, nobs=args['NUM_CS'] + args['NUM_US'] + args['NUM_DIST'])
+fig = plot_last_n(obsall, np.insert(predall, 0, 0)[:-1], errors, n=500, nobs=args['NUM_CS'] + args['NUM_US'] + args['NUM_DIST'])
 
 
 plt.savefig(my_experiment.path + "result.pdf", format="pdf")

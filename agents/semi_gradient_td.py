@@ -49,7 +49,7 @@ def train_td(env, model, loss, optimizer, device, cfg, my_experiment):
         td_error.backward()
         optimizer.step()
         #
-        if i % 500 == 0:
+        if i % 5000 == 0:
             logger.info("TD Error at t:%d = %f", i, running_error)
             keys = ["TD_error", "V", "step", "run"]
             if len(results_list) > 0:

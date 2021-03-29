@@ -32,7 +32,8 @@ if args['w']:
     my_experiment = experimentWandb(project='animal_state_learning', entity='nolife')
     args = my_experiment.cfg
     args['run'] = 0 #for compat with other logger
-    args.update({'GAMMA': 1-1/np.mean(wandb.config['ISI_interval'])},
+    args['E_ISI'] = np.mean(wandb.config['ISI_interval'])
+    args.update({'GAMMA': 1-1/args['E_ISI']},
                 allow_val_change=True)
 
 else:

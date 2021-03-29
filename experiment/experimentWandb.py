@@ -61,6 +61,7 @@ class experimentWandb(experiment):
         # this is some hardcoding masterpiece right here
         # this should be in insert_value instead...
         if len(keys)  == 2:
+            wandb.log({keys[1]: value_list[0][1]})
             wandb.run.summary[keys[1]] = value_list[0][1]
 
         else:

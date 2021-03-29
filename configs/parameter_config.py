@@ -10,6 +10,8 @@ class Parser(configargparse.ArgParser):
         super().__init__()
 
 
+        self.add('-v', help='verbose', action='store_true')
+        self.add('-w', help='use wandb instead', action='store_true')
         self.add('--gpus', type=int, help='epoch number', default=1)
         self.add('--name', help='Name of experiment', default="oml_regression")
         self.add('--output-dir', help='Name of experiment', default="../results/")

@@ -3,6 +3,7 @@ import random
 import torch
 import configs.parameter_config as reg_parser
 from experiment.experiment import experiment
+from experiment.experimentWandb import experimentWandb
 import numpy as np
 
 from models.lstm import LSTM
@@ -11,11 +12,10 @@ from agents.semi_gradient_td import train_td
 from env.classical_conditioning_benchmarks import TraceConditioning, compute_return_error
 import utils
 import logging
+import wandb
 import matplotlib.pyplot as plt
 
 logger = logging.getLogger('experiment')
-
-
 
 
 p = reg_parser.Parser()
@@ -26,10 +26,22 @@ all_args = vars(p.parse_known_args()[0])
 args = utils.get_run(all_args, run)
 
 
-my_experiment = experiment(args["name"], args, args["output_dir"], sql=True,
-                           run=int(run / total_seeds),
-                           seed=total_seeds)
+if args['v']:
+    logging.basicConfig(level=logging.INFO)
+if args['w']:
+    my_experiment = experimentWandb()
+    args = my_experiment.cfg
+    args['run'] = 0 #for compat with other logger
+    args.update({'GAMMA': 1-1/np.mean(wandb.config['ISI_interval'])},
+                allow_val_change=True)
 
+else:
+    my_experiment = experiment(args["name"], args, args["output_dir"], sql=True,
+                               run=int(run / total_seeds),
+                               seed=total_seeds)
+    args["ISI_interval"] = [int(x) for x in args["ISI_interval"].split(",")]
+    args["ITI_interval"] = [int(x) for x in args["ITI_interval"].split(",")]
+    args["GAMMA"] =  1-1/np.mean(args['ISI_interval'])
 
 my_experiment.make_table("metrics", {"run": 0, "TD_error": 0.0, "step": 0, "V":0.0}, ("run", "step"))
 my_experiment.make_table("msre", {"run": 0, "msre": 0.0}, ["run"])
@@ -45,9 +57,6 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
-args["ISI_interval"] = [int(x) for x in args["ISI_interval"].split(",")]
-args["ITI_interval"] = [int(x) for x in args["ITI_interval"].split(",")]
-args["GAMMA"] =  1-1/np.mean(args['ISI_interval'])
 
 tc = TraceConditioning(seed=args['seed'],
                        ISI_interval=args['ISI_interval'],
@@ -79,3 +88,6 @@ fig = plot_last_n(obsall, np.insert(predall, 0, 0)[:-1], errors, n=500, nobs=arg
 
 
 plt.savefig(my_experiment.path + "result.pdf", format="pdf")
+
+if my_experiment.type == 'wandb':
+    wandb.log({'results': wandb.Image(plt)})

@@ -49,7 +49,7 @@ def train_td(env, model, loss, optimizer, device, cfg, my_experiment):
         td_error.backward()
         optimizer.step()
         #
-        if i % 5000 == 0:
+        if i % 500 == 0:
             logger.info("TD Error at t:%d = %f", i, running_error)
             keys = ["TD_error", "V", "step", "run"]
             if len(results_list) > 0:
@@ -57,10 +57,10 @@ def train_td(env, model, loss, optimizer, device, cfg, my_experiment):
                 results_list = []
             # print(f'TD Error at t:{i} = {running_error}')
         running_error = running_error*0.99 + td_error.item()*0.01
-        if i % 100 == 0:
-            results_list.append([running_error, predall[t], global_step, cfg["run"]])
         # Store the value prediction belonging to o_t
         predall[t] = V_tp1[-1].detach().item()
+        if i % 100 == 0:
+            results_list.append([running_error, predall[t], global_step, cfg["run"]])
         global_step += 1
         # results_list.append([td_error.item(), predall[t], global_step  ,cfg["rank"]])
 

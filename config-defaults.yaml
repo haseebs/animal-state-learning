@@ -1,9 +1,9 @@
-'SEED':
+'seed':
   desc:
-  value: 0
-'USE_GPU':
+  value: 90
+'gpus':
   desc:
-  value: True
+  value: 1
 'NUM_CS':
   desc:
   value: 1
@@ -42,7 +42,7 @@
   value: 0
 'N_TRAIN_STEPS':
   desc:
-  value: 2000000
+  value: 10000
 'TBPTT_T':
   desc:
   value: 10

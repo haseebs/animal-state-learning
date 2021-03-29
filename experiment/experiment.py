@@ -38,6 +38,11 @@ class experiment:
     def __init__(self, name, args, output_dir="../", sql=True, run=None, seed=None):
         import sys
 
+        if name==None:
+            return
+
+        self.type = 'sql'
+
         with open("credentials.json") as f:
             self.db_data = json.load(f)
 

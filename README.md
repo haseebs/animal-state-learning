@@ -9,8 +9,17 @@ This repo contains the unofficial implementation of some experiments from the pa
 `-v` verbose
 
 1. Setup using requirements.txt
-2. Run `wandb login` on shell and paste your API key from profile
-3. Default params are given in `config-defaults.yaml`. Sweep params are provided in `sweep.yaml`. Set up sweep in portal to run.
+2. Default params are given in `config-defaults.yaml`. Sweep params are provided in `sweep.yaml`.
+
+## W&B Setup
+
+You need to initialize W&B to log the results. If it's your first time using W&B on a machine, you will need to log in:
+```
+$ wandb login
+```
+You will be asked for your API key, which appears on your W&B profile settings page.
+
+
 
 ## Reference
 If you use this code in your work, you can reference the original authors at
